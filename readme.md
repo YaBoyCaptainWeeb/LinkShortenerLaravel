@@ -10,7 +10,7 @@
 
 ```bash
 # Команда клонирования репозитория
-git clone 
+git clone https://github.com/YaBoyCaptainWeeb/LinkShortenerLaravel.git
 cd <PROJECT_FOLDER>
 ```
 
