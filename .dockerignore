@@ -8,8 +8,8 @@ vendor
 .env.example
 docker-compose.yml
 docker/
-storage
-bootstrap/cache
+#storage
+#bootstrap/cache
 public/hot
 *.md
 README.md

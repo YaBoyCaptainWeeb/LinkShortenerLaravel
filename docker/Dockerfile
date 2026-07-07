@@ -5,14 +5,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM php:8.4-cli AS backend
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    git unzip libicu-dev libzip-dev \
-    && docker-php-ext-install intl zip \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
+FROM composer:2 AS backend
 WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
@@ -32,7 +25,12 @@ COPY . .
 COPY --from=backend /app/vendor ./vendor
 COPY --from=frontend /app/public/build ./public/build
 
-RUN chown -R www-data:www-data /var/www/html \
+RUN mkdir -p storage/framework/sessions \
+             storage/framework/views \
+             storage/framework/cache \
+             storage/logs \
+             bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage \
     && chmod -R 755 /var/www/html/bootstrap/cache
 
