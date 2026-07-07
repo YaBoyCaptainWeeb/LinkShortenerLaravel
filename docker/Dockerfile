@@ -2,7 +2,7 @@ FROM node:20-alpine AS frontend
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
-COPY .. .
+COPY . .
 RUN npm run build
 
 FROM composer:2.7 AS backend
