@@ -1,4 +1,11 @@
 .git
+.gitignore
+.env.example
+docker-compose.yml
+Dockerfile
+storage
+public
+bootstrap/cache
 node_modules
 vendor
 storage/logs/*
