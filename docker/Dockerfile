@@ -1,13 +1,13 @@
-FROM node:20-alpine AS fronted
+FROM node:20-alpine AS frontend
 WORKDIR /app
-COPY package.json ./
+COPY package*.json ./
 RUN npm ci
-COPY . .
+COPY .. .
 RUN npm run build
 
 FROM composer:2.7 AS backend
 WORKDIR /app
-COPY composer.* ./
+COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
 FROM php:8.4-fpm
@@ -20,10 +20,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /var/www/html
 
-COPY . .
+COPY .. .
 
 COPY --from=backend /app/vendor ./vendor
-COPY --from=fronted /app/public/build ./public/build
+COPY --from=frontend /app/public/build ./public/build
 
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage \
