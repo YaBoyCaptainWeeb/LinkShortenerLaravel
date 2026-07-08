@@ -2,10 +2,15 @@
 set -e
 
 echo "[entrypoint] Fixing permissions..."
-chown -R www-data:www-data /var/www/html
+chown -R www-data:www-data /var/www/html/storage
+chown -R www-data:www-data /var/www/html/bootstrap/cache
 chmod -R 755 /var/www/html
 chmod -R 775 /var/www/html/storage
 chmod -R 775 /var/www/html/bootstrap/cache
+
+chmod 755 /var/www/html/public
+find /var/www/html/public -type d -exec chmod 755 {} \;
+find /var/www/html/public -type f -exec chmod 644 {} \;
 
 echo "[entrypoint] Creating storage structure..."
 mkdir -p /var/www/html/storage/framework/sessions
@@ -15,8 +20,12 @@ mkdir -p /var/www/html/storage/framework/testing
 mkdir -p /var/www/html/storage/logs
 mkdir -p /var/www/html/bootstrap/cache
 
-echo "[entrypoint] Running Laravel setup..."
-php artisan storage:link --force || true
+chown -R www-data:www-data /var/www/html/storage
+chown -R www-data:www-data /var/www/html/bootstrap/cache
+
+#echo "[entrypoint] Publishing package assets..."
+#php artisan livewire:publish --assets 2>/dev/null || true
+#php artisan filament:assets 2>/dev/null || true
 
 if [ -z "$(grep '^APP_KEY=.\+' /var/www/html/.env 2>/dev/null)" ]; then
     echo "[entrypoint] APP_KEY is empty, generating..."

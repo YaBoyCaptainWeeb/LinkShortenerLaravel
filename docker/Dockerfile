@@ -26,13 +26,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /var/www/html
 
 COPY . .
-
 COPY --from=backend /app/vendor ./vendor
 COPY --from=frontend /app/public/build ./public/build
+
+RUN php artisan livewire:publish --assets 2>/dev/null || true
+RUN php artisan filament:assets 2>/dev/null || true
+RUN php artisan storage:link 2>/dev/null || true
 
 RUN mkdir -p storage/framework/sessions \
              storage/framework/views \
              storage/framework/cache \
+             storage/framework/testing \
              storage/logs \
              bootstrap/cache \
     && chown -R www-data:www-data /var/www/html \
