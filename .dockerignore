@@ -7,7 +7,8 @@ vendor
 .env
 .env.example
 docker-compose.yml
-docker/
+docker/*.yml
+docker/nginx/
 #storage
 #bootstrap/cache
 public/hot
