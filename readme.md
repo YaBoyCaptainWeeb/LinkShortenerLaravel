@@ -1,245 +1,222 @@
-# ShortLinks — Сокращатель ссылок
+# LinkShortener — Laravel URL Shortener
 
-Приложение для создания коротких ссылок с панелью управления на Filament.
+Сервис для сокращения ссылок на базе Laravel 11 + Livewire + Filament, упакованный в Docker с multi-stage сборкой.
 
 Проект задеплоен для наглядной демонстрации по адресу:
 http://185.68.246.39/ 
 ---
 
-# 🚀 Быстрый старт (Docker)
+# Инструкция
 
 ## 1. Клонирование репозитория
 
 ```bash
 # Команда клонирования репозитория
 git clone https://github.com/YaBoyCaptainWeeb/LinkShortenerLaravel.git
-cd <PROJECT_FOLDER>
 ```
 
 ---
+## 2. Сборка проекта
+Собранный контейнер полностью работает с файлами внутри образа, поэтому вы можете собрать контейнер
+и закинуть в любое место на вашем сервере, главное чтобы были следующие файлы:
+- Dockerfile
+- docker-compose.yml
+- .dockerignore
+- .env
 
-## 2. Создание `.env` файла
+Приложение работает с БД(тестировалось на sqlite & mysql), желательно использовать внешнее подключение, дабы при обновлении сборки или ее перезапуске
+не происходило потери данных.
+
+> **ВАЖНО**<br>
+> Настоятельно рекомендуется НЕ производить сборку с запуском одновременно: важный файл с переменными окружения .env стоит подготовить ДО запуска контейнера, иначе поведение может быть непредсказуемым.<br>
+> 1. СНАЧАЛА docker compose <file> build<br>
+> 2. Описываем .env (*)<br>
+> 3. .env ДОЛЖЕН располагаться в папке вашего проекта, куда вы расположили Docker файлы<br>
+> 4. ТОЛЬКО ПОСЛЕ ЭТОГО производим запуск контейнера <br>
 
 ```bash
-cp .env.example .env
+# Сборка проекта
+# DOCKER_DEFAULT_PLATFORM - если вдруг вам нужно сделать сборку под конкретную платформу
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose -f docker/docker-compose.yml build;  
+
+# Сохранение образа в отдельный файл, если желаете экспортировать образ на другую машину 
+docker save linkshortenerlaravel-app:latest | gzip > app.tar.gz  
 ```
+> Сборка занимает примерно **5–15 минут**, так как выполняется:
+>
+> - composer install
+> - npm install
+> - npm build
+> - установка PHP Extensions
 
-Откройте `.env` и настройте следующие параметры:
-
+**Шаблон .env (*)**
 ```env
-APP_NAME=ShortLinks
-APP_ENV=local
-APP_DEBUG=true
-APP_URL=http://YOUR_IP
+APP_NAME=shortLinks
+APP_ENV=production
+APP_KEY=
+APP_DEBUG=false
+APP_URL=
+
+APP_LOCALE=ru
+APP_FALLBACK_LOCALE=en
+APP_FAKER_LOCALE=ru_RU
+
+APP_MAINTENANCE_DRIVER=file
+
+# PHP_CLI_SERVER_WORKERS=4
+
+BCRYPT_ROUNDS=12
 
 LOG_CHANNEL=stack
+LOG_STACK=single
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=error
 
-DB_CONNECTION=sqlite
+DB_CONNECTION=mysql
+DB_HOST=host.docker.internal
+DB_PORT=3306
+DB_DATABASE=
+DB_USERNAME=
+DB_PASSWORD=
 
 SESSION_DRIVER=database
+SESSION_LIFETIME=120
+SESSION_ENCRYPT=false
+SESSION_PATH=/
+SESSION_DOMAIN=null
+
+BROADCAST_CONNECTION=log
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=sync
 
 CACHE_STORE=database
-QUEUE_CONNECTION=database
+
+VITE_APP_NAME="${APP_NAME}"
 ```
-
-### Важные моменты
-
-- `APP_URL` — укажите ваш IP или домен (без trailing slash)
-- `DB_CONNECTION=sqlite` — для SQLite базы
-- `SESSION_DRIVER=file` — для SQLite (или `database` для MySQL)
-
 ---
+## 3. Подготовка вашего VPS
+> **ВАЖНО**<br>
+> Заранее создайте установите СУБД и создайте БД перед запуском контейнера<br>
 
-## 3. Создание SQLite базы данных
+### Пример создания БД с выделенным юзером для вашего приложения
+```sql
+CREATE DATABASE shortlinks;
+CREATE USER 'shortlinks'@'%' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON shortlinks.* TO 'shortlinks'@'%';
+FLUSH PRIVILEGES;
+```
+### Подготовка
+```bash
+# Рекомендуется создать папку под проект в данном месте
+mkdir -p /var/www/<project_name>
+
+# В случае импорта образа
+docker load < <app.tar.gz path> # загружаем образ 
+rm <app.tar.gz path> # Убираемся за собой
+```
+Убедитесь, что на вашей машине, куда вы импортируете образ имеет необходимую структуру файлов из пункта №2
+```bash
+# Поднимаем контейнер
+# предварительно создайте себе папку под проект
+cd <LinkShortenerLaravel path>
+docker compose -f docker/docker-compose.yml up -d
+```
 
 ```bash
-mkdir -p database
-touch database/database.sqlite
+# Если же вы решили все делать в рамках одной машины, то после сборки пишем
+docker compose -f docker/docker-compose.yml up -d
 ```
-
 ---
-
-## 4. Запуск контейнеров
-
-```bash
-docker compose up -d --build
-```
-
-Дождитесь сборки (5–10 минут).
-
----
-
-## 5. Установка зависимостей
-
-```bash
-docker compose exec app composer install
-docker compose exec app npm install
-docker compose exec app npm run build
-```
-
----
-
-## 6. Публикация ассетов Livewire
-
-```bash
-docker compose exec app php artisan livewire:publish --assets
-```
-
----
-
-## 7. Настройка прав доступа
-
-```bash
-docker compose exec app chmod -R 775 storage bootstrap/cache
-docker compose exec app chown -R www-data:www-data storage bootstrap/cache
-```
-
----
-
-## 8. Генерация ключа приложения
-
-```bash
-docker compose exec app php artisan key:generate
-```
-
----
-
-## 9. Запуск миграций
-
-```bash
-docker compose exec app php artisan migrate
-```
-
----
-
-## 10. Очистка и кэширование конфигурации
-
-```bash
-docker compose exec app php artisan optimize:clear
-docker compose exec app php artisan config:cache
-```
-
----
-
-## 11. Перезапуск контейнеров
-
-```bash
-docker compose restart
-```
-
----
-
-# 🌐 Доступ к приложению
-
-Откройте в браузере:
-
-```text
-http://ТВОЙ_IP
-```
-
-### Основные маршруты
-
-- Регистрация: `/register`
-- Авторизация `/login`
-- Панель управления: `/panel/links`
-
----
-
-# 📁 Структура Docker файлов
-
-В репозитории уже находятся:
-
-- `Dockerfile` — образ PHP 8.4 с необходимыми расширениями
-- `docker-compose.yml` — конфигурация контейнеров (`app + nginx`)
-- `docker/nginx/default.conf` — конфигурация Nginx
-
-Вы можете модифицировать эти файлы под свои нужды.
-
----
-
 # 🔄 Обновление приложения
-
 ```bash
+# На машине разработки:
 git pull
+# DOCKER_DEFAULT_PLATFORM - если вдруг вам нужно сделать сборку под конкретную платформу
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose -f docker/docker-compose.yml build --no-cache
+docker save linkshortenerlaravel-app:latest | gzip > app.tar.gz
+scp app.tar.gz root@YOUR_VPS_IP:/tmp/
 
-docker compose exec app composer install
-docker compose exec app npm install
-docker compose exec app npm run build
+# На VPS:
+docker load < /tmp/app.tar.gz
+rm /tmp/app.tar.gz
+cd /var/www/LinkShortenerLaravel
+docker compose -f docker/docker-compose.yml down
+docker volume rm docker_app_public 2>/dev/null || true
+docker compose -f docker/docker-compose.yml up -d
+docker compose -f docker/docker-compose.yml exec app php artisan migrate --force
 
-docker compose exec app php artisan migrate
+# Если сборка и запуск происходит на одной машине
+git pull https://github.com/YaBoyCaptainWeeb/LinkShortenerLaravel.git
+# DOCKER_DEFAULT_PLATFORM - если вдруг вам нужно сделать сборку под конкретную платформу
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose -f docker/docker-compose.yml up -d --build --force-recreate
 
-docker compose restart
+# Примените новые миграции(если они есть)
+docker compose -f docker/docker-compose.yml exec app php artisan migrate
+
+# Очистите кэш
+docker compose -f docker/docker-compose.yml exec app php artisan config:clear
+docker compose -f docker/docker-compose.yml exec app php artisan route:clear
+docker 
 ```
-
 ---
-
-# 🛠️ Полезные команды
-
+# 🧹 Удаление проекта
 ```bash
-# Просмотр логов
-docker compose logs -f
+# Остановить и удалить контейнеры, сети, volumes
+docker compose -f docker/docker-compose.yml down --rmi local --volumes --remove-orphans
 
-# Подключение к контейнеру
-docker compose exec app bash
+# Удалить образ
+docker rmi linkshortenerlaravel-app:latest 2>/dev/null || true
 
-# Перезапуск контейнеров
-docker compose restart
+# Удалить кэш сборки Docker
+docker builder prune -f
 
-# Остановка контейнеров
-docker compose down
-
-# Полная пересборка
-docker compose up -d --build
+# Удалить все неиспользуемые образы и volumes
+docker system prune -a --volumes -f
 ```
 
----
-
-# ⚠️ Возможные проблемы
-
-## Ошибка 403 после регистрации
-
-Проверьте:
-
-- `SESSION_DRIVER` в `.env` (должен быть `file` для SQLite)
-- Папка `storage/framework/sessions` имеет права на запись
-
----
-
-## Ошибка 405 Method Not Allowed
-
-Проверьте:
-
-- Опубликованы ли ассеты Livewire (шаг 6)
-- Права на `public/vendor/livewire`
-
----
-
-## Ошибка базы данных
-
-Проверьте:
-
-- Файл `database/database.sqlite` существует
-- В `.env` указано:
-
-```env
-DB_CONNECTION=sqlite
-```
-
-Для SQLite не указывайте:
-
-- `DB_HOST`
-- `DB_PORT`
-- `DB_USERNAME`
-- `DB_PASSWORD`
-
----
-
-## Проблемы с правами доступа
-
-Если возникают ошибки прав, выполните:
-
+# 🔍 Диагностика Docker-образа и контейнеров
+**Проверка логов**
 ```bash
-chmod -R 775 storage bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
+# Логи приложения (последние 100 строк)
+docker compose -f docker/docker-compose.yml logs app --tail 100
+
+# Логи nginx
+docker compose -f docker/docker-compose.yml logs nginx --tail 100
+
+# Логи init-контейнера (копирование public)
+docker compose -f docker/docker-compose.yml logs init_public
+
+# Следить за логами в реальном времени
+docker compose -f docker/docker-compose.yml logs -f app
+
+# Логи с временными метками
+docker compose -f docker/docker-compose.yml logs -t app
+
+# Логи за последние 30 минут
+docker compose -f docker/docker-compose.yml logs --since 30m app
 ```
----
+**Проверка статуса контейнеров**
+```bash
+# Статус всех контейнеров
+docker compose -f docker/docker-compose.yml ps
+
+# Подробная информация о контейнере
+docker inspect shortlinks_app
+
+# Статистика использования ресурсов (CPU, RAM)
+docker stats shortlinks_app shortlinks_nginx
+
+# Проверить, запущен ли контейнер
+docker compose -f docker/docker-compose.yml ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
+```
+**Интерактивная оболочка контейнера**
+```bash
+# Войти в контейнер app (PHP-FPM)
+docker compose -f docker/docker-compose.yml exec app sh
+
+# Войти в контейнер nginx
+docker compose -f docker/docker-compose.yml exec nginx sh
+
+# Войти в контейнер с root-правами
+docker exec -u root -it shortlinks_app sh
+```
