@@ -156,7 +156,7 @@ docker compose -f docker/docker-compose.yml exec app php artisan migrate
 # Очистите кэш
 docker compose -f docker/docker-compose.yml exec app php artisan config:clear
 docker compose -f docker/docker-compose.yml exec app php artisan route:clear
-docker 
+docker compose -f docker/docker-compose.yml exec app php artisan view:clear
 ```
 ---
 # 🧹 Удаление проекта
