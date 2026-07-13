@@ -61,6 +61,7 @@ class LinkResource extends Resource
                 TextColumn::make('code')
                     ->label('Короткая ссылка')
                     ->copyable()
+                    ->tooltip(fn(Link $link) => $link->getShortUrlAttribute())
                     ->copyMessage('Скопировано в буфер обмена')
                     ->copyableState(fn(Link $link) => $link->getShortUrlAttribute())
                     ->formatStateUsing(fn($state) => route('link.redirect', $state))
@@ -137,7 +138,7 @@ class LinkResource extends Resource
                 ]
             )
             ->paginationPageOptions([
-                10,25,50,100
+                10, 25, 50, 100
             ]);
     }
 
