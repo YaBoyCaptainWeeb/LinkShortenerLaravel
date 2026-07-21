@@ -3,7 +3,7 @@
 Сервис для сокращения ссылок на базе Laravel 11 + Livewire + Filament, упакованный в Docker с multi-stage сборкой.
 
 Проект развернут для наглядной демонстрации по адресу:
-[https://lnkshrt.xyz/](lnkshrt.xyz)
+[lnkshrt.xyz](https://lnkshrt.xyz/)
 ---
 
 # Инструкция
