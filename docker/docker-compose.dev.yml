@@ -21,7 +21,7 @@ services:
 
     nginx:
         image: nginx:alpine
-        container_name: shortlinks_nginx
+        container_name: shortlinks_nginx_dev
         restart: unless-stopped
         ports:
             - "443:443"
