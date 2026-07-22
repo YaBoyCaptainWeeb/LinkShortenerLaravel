@@ -13,7 +13,11 @@ final class Link extends Model
         'user_id',
         'code',
         'url',
-        'clicks_count'
+        'clicks_count',
+        'og_title',
+        'og_description',
+        'og_image',
+        'og_url'
     ];
 
     protected $casts = [

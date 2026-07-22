@@ -18,10 +18,17 @@ final readonly class LinkShortenerService
     {
         $code = $this->generateUniqueCode();
 
+        $ogService = app(OpenGraphService::class);
+        $metadata = $ogService->fetchMetadata($originalUrl);
+
         return Link::create([
             'user_id' => $user->id,
             'url' => $originalUrl,
             'code' => $code,
+            'og_title' => $metadata['title'],
+            'og_description' => $metadata['description'],
+            'og_image' => $metadata['image'],
+            'og_url' => $metadata['url'],
         ]);
     }
 

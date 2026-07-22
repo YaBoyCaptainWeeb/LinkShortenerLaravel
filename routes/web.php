@@ -17,6 +17,10 @@ Route::get('/panel', function () {
     return view('welcome');
 })->name('panel.home');
 
+//Route::get('/preview/{code}', LinkPreviewController::class)
+//    ->where('code', '^(?!panel|links|livewire)[A-Za-z0-9]+$')
+//    ->name('link.preview');
+
 Route::get('/{code}', LinkRedirectController::class)
     ->where('code', '^(?!panel|links|livewire)[A-Za-z0-9]+$')
     ->name('link.redirect');
