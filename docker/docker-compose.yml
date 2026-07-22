@@ -6,6 +6,8 @@ services:
             dockerfile: docker/Dockerfile
         container_name: shortlinks_app
         restart: unless-stopped
+        environment:
+            - APP_ENV=production
         volumes:
             - ../.env:/var/www/html/.env
             - app_public:/var/www/html/public
