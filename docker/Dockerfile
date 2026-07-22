@@ -20,7 +20,7 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interactio
 FROM php:8.4-fpm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git curl libpng-dev libonig-dev libxml2-dev libzip-dev libicu-dev zip unzip \
+    curl libpng-dev libonig-dev libxml2-dev libzip-dev libicu-dev zip unzip \
     && docker-php-ext-configure intl \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip intl \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
