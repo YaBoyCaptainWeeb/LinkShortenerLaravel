@@ -17,7 +17,7 @@ services:
         extra_hosts:
             - "host.docker.internal:host-gateway"
         networks:
-            - shortlinks_network
+            - shortlinks_network_dev
 
     nginx:
         image: nginx:alpine
@@ -34,11 +34,11 @@ services:
         depends_on:
             - app
         networks:
-            - shortlinks_network
+            - shortlinks_network_dev
 
 volumes:
     app_public:
         driver: local
 networks:
-    shortlinks_network:
+    shortlinks_network_dev:
         driver: bridge
