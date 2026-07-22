@@ -1,9 +1,9 @@
 services:
     app:
+        image: shortlinks:latest-production
         build:
             context: ..
             dockerfile: docker/Dockerfile
-        image: linkshortenerlaravel-app:latest
         container_name: shortlinks_app
         restart: unless-stopped
         volumes:
@@ -17,7 +17,7 @@ services:
             - shortlinks_network
 
     init_public:
-        image: linkshortenerlaravel-app:latest
+        image: shortlinks:latest-production
         container_name: shortlinks_init
         entrypoint: [ "sh", "-c" ]
         command:

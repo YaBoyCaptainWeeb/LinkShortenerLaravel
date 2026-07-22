@@ -1,5 +1,6 @@
 services:
     app:
+        image: shortlinks:dev
         build:
             context: ..
             dockerfile: docker/Dockerfile
