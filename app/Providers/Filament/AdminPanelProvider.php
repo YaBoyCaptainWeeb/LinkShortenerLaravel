@@ -58,7 +58,6 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->userMenuItems([
-                'logout' => MenuItem::make()->label('Выйти')
             ]);
     }
 }
