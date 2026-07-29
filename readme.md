@@ -18,7 +18,7 @@ This document is available in:
 
 Main features:
 
-- user registration, authentication, password reset, and two-factor authentication;
+- user registration, authentication, password reset, and two-factor authentication (WIP);
 - per-user management of short links;
 - random Base62 short codes;
 - click counters with IP address, user agent, and timestamp history;
@@ -476,7 +476,7 @@ LinkShortener — самостоятельно разворачиваемый с
 
 Основные возможности:
 
-- регистрация, авторизация, сброс пароля и двухфакторная аутентификация;
+- регистрация, авторизация, сброс пароля и двухфакторная аутентификация (WIP);
 - отдельный список ссылок для каждого пользователя;
 - случайные короткие Base62-коды;
 - счётчик переходов с историей IP-адресов, User-Agent и времени;
