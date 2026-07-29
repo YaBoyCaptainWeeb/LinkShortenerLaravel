@@ -1,57 +1,78 @@
 #!/bin/sh
 set -e
 
-echo "[entrypoint] Starting container setup..."
+cd /var/www/html
 
-echo "[entrypoint] Fixing permissions for storage and bootstrap/cache..."
-chown -R www-data:www-data /var/www/html/storage
-chown -R www-data:www-data /var/www/html/bootstrap/cache
-chmod -R 775 /var/www/html/storage
-chmod -R 775 /var/www/html/bootstrap/cache
+echo "[entrypoint] Preparing Laravel directories..."
+mkdir -p \
+    storage/app/public \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/framework/cache/data \
+    storage/framework/testing \
+    storage/logs \
+    bootstrap/cache
 
-echo "[entrypoint] Setting correct permissions for public directory..."
-find /var/www/html/public -type d -exec chmod 755 {} \;
-find /var/www/html/public -type f -exec chmod 644 {} \;
+if [ "${APP_ENV:-production}" != "production" ] && [ -d /opt/public ]; then
+    echo "[entrypoint] Refreshing dev public volume from the image..."
+    find public -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+    cp -a /opt/public/. public/
 
-echo "[entrypoint] Ensuring storage structure exists..."
-mkdir -p /var/www/html/storage/framework/sessions
-mkdir -p /var/www/html/storage/framework/views
-mkdir -p /var/www/html/storage/framework/cache/data
-mkdir -p /var/www/html/storage/framework/testing
-mkdir -p /var/www/html/storage/logs
-mkdir -p /var/www/html/bootstrap/cache
-
-chown -R www-data:www-data /var/www/html/storage
-chown -R www-data:www-data /var/www/html/bootstrap/cache
-
-echo "[entrypoint] Publishing package assets..."
-php artisan livewire:publish --assets || echo "[entrypoint] Livewire publish failed (package may not be installed)"
-php artisan filament:assets || echo "[entrypoint] Filament publish failed (package may not be installed)"
-php artisan storage:link || echo "[entrypoint] Storage link failed (may already exist)"
-php artisan migrate || echo "[entrypoint] Nothing to migrate"
-
-echo "[entrypoint] Checking APP_KEY..."
-if [ -z "$(grep '^APP_KEY=.\+' /var/www/html/.env 2>/dev/null)" ]; then
-    echo "[entrypoint] APP_KEY is empty, generating..."
-    php artisan key:generate --force
-else
-    echo "[entrypoint] APP_KEY already set, skipping generation."
+    sed -ri 's/^opcache.validate_timestamps=.*/opcache.validate_timestamps=1/' \
+        /usr/local/etc/php/conf.d/zz-shortlinks.ini
 fi
 
-echo "[entrypoint] Clearing existing caches..."
-php artisan config:clear || true
-php artisan route:clear || true
-php artisan view:clear || true
-php artisan cache:clear || true
+if [ "${DB_CONNECTION:-}" = "sqlite" ] \
+    && [ -n "${DB_DATABASE:-}" ] \
+    && [ "${DB_DATABASE}" != ":memory:" ]; then
+    echo "[entrypoint] Preparing SQLite database..."
+    mkdir -p "$(dirname "${DB_DATABASE}")"
+    touch "${DB_DATABASE}"
+fi
 
-if [ "$APP_ENV" = "production" ]; then
-    echo "[entrypoint] Caching configuration..."
-    php artisan config:cache || true
-    php artisan route:cache || true
-    php artisan view:cache || true
+echo "[entrypoint] Setting writable directory permissions..."
+chown -R www-data:www-data storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
+find public -type d -exec chmod 755 {} \;
+find public -type f -exec chmod 644 {} \;
+
+if [ -z "${APP_KEY:-}" ] && ! grep -q '^APP_KEY=.\+' .env 2>/dev/null; then
+    echo "[entrypoint] APP_KEY is empty; generating a persistent key..."
+    php artisan key:generate --force
+else
+    echo "[entrypoint] APP_KEY is already configured."
+fi
+
+echo "[entrypoint] Clearing runtime caches..."
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+
+php artisan storage:link || echo "[entrypoint] Storage link already exists"
+
+echo "[entrypoint] Applying database migrations..."
+migration_attempt=1
+migration_attempts=10
+
+until php artisan migrate --force; do
+    if [ "$migration_attempt" -ge "$migration_attempts" ]; then
+        echo "[entrypoint] Migration failed after ${migration_attempts} attempts." >&2
+        exit 1
+    fi
+
+    echo "[entrypoint] Database migration failed; retrying in 3 seconds (${migration_attempt}/${migration_attempts})..."
+    migration_attempt=$((migration_attempt + 1))
+    sleep 3
+done
+
+if [ "${APP_ENV:-production}" = "production" ]; then
+    echo "[entrypoint] Building production caches..."
+    php artisan config:cache
+    php artisan route:cache
+    php artisan view:cache
 else
     echo "[entrypoint] Dev mode: skipping cache generation"
 fi
 
-echo "[entrypoint] Setup completed. Starting php-fpm..."
+echo "[entrypoint] Starting PHP-FPM..."
 exec php-fpm

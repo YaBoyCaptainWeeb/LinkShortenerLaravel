@@ -9,8 +9,11 @@ vendor
 docker-compose.yml
 docker/*.yml
 docker/nginx/
-#storage
-#bootstrap/cache
+storage
+storage-dev
+bootstrap/cache/*
 public/hot
+*.tar
+*.tar.gz
 *.md
 README.md
