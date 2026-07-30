@@ -33,8 +33,9 @@
                 aria-label="{{ $ariaLabel }}"
                 @class([
                     'rounded-md px-2.5 py-1.5 text-xs font-semibold transition',
-                    'cursor-default bg-amber-500 text-white' => $isCurrent,
-                    'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' => ! $isCurrent,
+                    'cursor-default bg-primary-500 bg-amber-500 text-white' => $isCurrent,
+                    'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' => !$isCurrent,
+                    'cursor-pointer' => !$isCurrent
                 ])
             >
                 {{ strtoupper($locale->value) }}

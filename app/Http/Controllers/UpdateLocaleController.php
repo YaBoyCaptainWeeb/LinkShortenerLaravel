@@ -19,7 +19,7 @@ class UpdateLocaleController
         $user = $request->user();
         if ($user instanceof User)
         {
-            $user->locale = $locale->value;
+            $user->locale = $locale;
             $user->save();
         }
         return redirect()->back();
