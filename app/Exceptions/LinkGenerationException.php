@@ -5,6 +5,7 @@ namespace App\Exceptions;
 use Exception;
 use App\Enums\LinkGenerationError;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -25,7 +26,7 @@ class LinkGenerationException extends Exception
 
     public function __construct(LinkGenerationError $errorType, array $context)
     {
-        parent::__construct($errorType->label());
+        parent::__construct("Short link generation failed [{$errorType->value}].");
 
         $this->errorType = $errorType;
         $this->context = $context;
@@ -33,10 +34,14 @@ class LinkGenerationException extends Exception
 
     public function report(): void
     {
-        Log::critical("Сбой генерации ссылки [{$this->errorType->value}]",
-            array_merge([
-                'error_message' => $this->getMessage()
-            ], $this->context));
+        Log::critical('Short link generation failed.', array_merge(
+            $this->context,
+            [
+                'error_type' => $this->errorType->value,
+                'user_id' => Auth::id(),
+                'exception' => $this,
+            ],
+        ));
     }
 
     public function render(Request $request): Response
@@ -45,10 +50,10 @@ class LinkGenerationException extends Exception
             return response()->json([
                'status' => 'error',
                'code' => $this->errorType->value,
-               'message' => $this->getMessage(),
+               'message' => $this->errorType->label(),
             ], $this->errorType->httpStatus());
         }
 
-        return back()->withErrors(['code' => $this->getMessage()]);
+        return back()->withErrors(['code' => $this->errorType->label()]);
     }
 }

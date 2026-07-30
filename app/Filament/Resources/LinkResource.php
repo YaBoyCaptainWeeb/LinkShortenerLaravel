@@ -24,11 +24,17 @@ class LinkResource extends Resource
 {
     protected static ?string $model = Link::class;
 
-//    protected static ?string $navigationIcon = 'heroicon-o-link';
+    public static function getPluralModelLabel(): string
+    {
+        return __('links.resource.plural_label');
+    }
+    public static function getModelLabel(): string
+    {
+        return __('links.resource.label');
+    }
 
-//    protected static ?string $navigationLabel = null;
-    protected static ?string $pluralModelLabel = 'Ссылки';
-    protected static bool $shouldRegisterNavigation = false;
+    protected
+    static bool $shouldRegisterNavigation = false;
 
     protected static string|null $navigationGroup = null;
 
@@ -37,8 +43,8 @@ class LinkResource extends Resource
         return $form
             ->schema([
                 TextInput::make('url')
-                    ->label('Оригинальный URL')
-                    ->helperText('Введите свою ссылку')
+                    ->label(__('links.form.original_url'))
+                    ->helperText(__('links.form.original_url_hint'))
                     ->url()
                     ->required()
                     ->maxLength(2048)
@@ -59,40 +65,48 @@ class LinkResource extends Resource
             })
             ->columns([
                 TextColumn::make('code')
-                    ->label('Короткая ссылка')
+                    ->label(__('links.table.short_url'))
                     ->copyable()
                     ->tooltip(fn(Link $link) => $link->getShortUrlAttribute())
-                    ->copyMessage('Скопировано в буфер обмена')
+                    ->copyMessage(__('links.table.copy_success'))
                     ->copyableState(fn(Link $link) => $link->getShortUrlAttribute())
                     ->formatStateUsing(fn($state) => route('link.redirect', $state))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('url')
-                    ->label('Оригинальная ссылка')
+                    ->label(__('links.table.original_url'))
                     ->limit(50)
                     ->tooltip(fn(Link $record) => $record->url)
                     ->searchable(),
 
                 TextColumn::make('clicks_count')
-                    ->label('Кол-во переходов')
+                    ->label(__('links.table.clicks_count'))
                     ->numeric()
                     ->sortable()
                     ->badge()
                     ->color('success'),
 
                 TextColumn::make('created_at')
-                    ->label('Дата создания')
-                    ->dateTime('d.m.Y')
+                    ->label(__('links.table.created_at'))
+                    ->date(fn() => __('links.date_formats.date'))
                     ->sortable()
             ])
             ->filters([
                 Filter::make('created_at')
                     ->form([
                         DatePicker::make('created_from')
-                            ->label('Фильтровать с'),
+                            ->label(__('links.filters.from'))
+                            ->native(false)
+                            ->displayFormat(fn() => __('links.date_formats.date'))
+                            ->locale(fn() => app()->getLocale())
+                            ->closeOnDateSelection(),
                         DatePicker::make('created_to')
-                            ->label('По')
+                            ->label(__('links.filters.until'))
+                            ->native(false)
+                            ->displayFormat(fn() => __('links.date_formats.date'))
+                            ->locale(fn() => app()->getLocale())
+                            ->closeOnDateSelection(),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
@@ -108,17 +122,17 @@ class LinkResource extends Resource
             ])
             ->actions([
                 Action::make('statistics')
-                    ->label('Статистика для ссылки')
+                    ->label(__('links.actions.statistics'))
                     ->icon('heroicon-o-chart-bar')
                     ->color('primary')
                     ->modalWidth('7xl')
                     ->modalContent(fn(Link $link) => view('filament.modals.link-statistics', ['link' => $link]))
                     ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Закрыть'),
+                    ->modalCancelActionLabel(__('links.actions.close')),
                 DeleteAction::make()
                     ->requiresConfirmation()
-                    ->modalHeading('Удалить ссылку?')
-                    ->modalDescription('Вся статистика по этой ссылке так же будет удалена.')
+                    ->modalHeading(__('links.delete.heading'))
+                    ->modalDescription(__('links.delete.description'))
                     ->color('warning')
             ])
             ->bulkActions([
@@ -129,12 +143,12 @@ class LinkResource extends Resource
                 ]),
             ])
             ->headerActions([])
-            ->emptyStateHeading('Список ссылок пуст')
-            ->emptyStateDescription('Создайте свою первую короткую ссылку')
+            ->emptyStateHeading(__('links.empty.heading'))
+            ->emptyStateDescription(__('links.empty.description'))
             ->emptyStateIcon('heroicon-o-link')
             ->emptyStateActions([
                     CreateAction::make()
-                        ->label('Создать ссылку')
+                        ->label(__('links.actions.create'))
                 ]
             )
             ->paginationPageOptions([

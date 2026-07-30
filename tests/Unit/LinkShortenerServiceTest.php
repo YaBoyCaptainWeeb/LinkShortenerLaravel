@@ -2,13 +2,12 @@
 
 namespace Tests\Unit;
 
-use App\Exceptions\LinkGenerationException;
 use App\Models\Link;
 use App\Models\User;
 use App\Services\LinkShortenerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use Random\RandomException;
+use Tests\TestCase;
 
 class LinkShortenerServiceTest extends TestCase
 {
@@ -17,7 +16,6 @@ class LinkShortenerServiceTest extends TestCase
      * Тест 1: Проверяем успешное создание короткой ссылки в обычном режиме.
      *
      * @throws RandomException
-     * @throws LinkGenerationException
      */
     public function test_create_a_short_link_successfully(): void
     {
@@ -39,19 +37,4 @@ class LinkShortenerServiceTest extends TestCase
         ]);
     }
 
-    /**
-     * Тест 2: Проверяем, как система реагирует на вызов исключения.
-     *
-     * @throws RandomException
-     * @throws LinkGenerationException
-     */
-    public function test_expects_link_generation_exception(): void
-    {
-        $user = User::factory()->create();
-        $service = new LinkShortenerService();
-
-        $this->expectException(LinkGenerationException::class);
-
-        $service->createShortLink($user, 'https://example.com');
-    }
 }

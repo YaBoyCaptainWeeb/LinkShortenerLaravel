@@ -64,6 +64,8 @@ class FortifyServiceProvider extends ServiceProvider
             return new class implements LogoutResponse {
                 public function toResponse($request): Redirector|RedirectResponse
                 {
+                    $request->session()->put('locale', app()->getLocale());
+
                     return redirect('/');
                 }
             };
