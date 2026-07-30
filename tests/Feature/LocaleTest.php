@@ -83,7 +83,7 @@ class LocaleTest extends TestCase
         ]);
     }
 
-    public function test_selected_locale_is_preserved_after_logout(): void
+    public function test_selected_locale_is_preserved_after_fortify_logout(): void
     {
         $user = User::factory()->create([
             'locale' => AppLocale::Russian,
@@ -102,6 +102,30 @@ class LocaleTest extends TestCase
         $this->assertGuest();
 
         $this->get('/')
+            ->assertOk();
+
+        $this->assertSame(AppLocale::English->value, App::currentLocale());
+    }
+
+    public function test_selected_locale_is_preserved_after_filament_logout(): void
+    {
+        $user = User::factory()->create([
+            'locale' => AppLocale::Russian,
+        ]);
+
+        $this->actingAs($user)
+            ->withHeader('Accept-Language', 'ru-RU,ru;q=0.9')
+            ->post('/locale/en')
+            ->assertRedirect()
+            ->assertSessionHas('locale', AppLocale::English->value);
+
+        $this->post(route('filament.admin.auth.logout'))
+            ->assertRedirect()
+            ->assertSessionHas('locale', AppLocale::English->value);
+
+        $this->assertGuest();
+
+        $this->get('/panel')
             ->assertOk();
 
         $this->assertSame(AppLocale::English->value, App::currentLocale());
