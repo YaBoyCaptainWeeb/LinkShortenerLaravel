@@ -40,7 +40,7 @@ final readonly class LinkShortenerService
     private function generateUniqueCode(): string
     {
         $startTime = microtime(true);
-        $timeLimit = 1.0;
+        $timeLimitMilliseconds = 1000;
         $batchSize = 100;
         $attempt = 0;
 
@@ -48,22 +48,24 @@ final readonly class LinkShortenerService
         $maxLength = 32;
         while (true) {
             $attempt++;
-            $duration = (int)round((microtime(true) - $startTime) * 1000);
+            $durationMilliseconds = (int) round((microtime(true) - $startTime) * 1000);
+
             if ($minLength > $maxLength) {
                 throw new LinkGenerationException(
                     LinkGenerationError::DATABASE_FULL,
                     [
                         'total_attempts' => $attempt,
-                        'time_spent' => $duration . ' ms',
+                        'time_spent' => $durationMilliseconds . ' ms',
                         'length' => $minLength,
                         'batch_size' => $batchSize
                     ]);
             }
-            if ($duration > $timeLimit) {
+
+            if ($durationMilliseconds > $timeLimitMilliseconds) {
                 throw new LinkGenerationException(LinkGenerationError::TIMEOUT,
                     [
                         'total_attempts' => $attempt,
-                        'time_spent' => $duration . ' ms',
+                        'time_spent' => $durationMilliseconds . ' ms',
                         'batch_size' => $batchSize
                     ]);
             }

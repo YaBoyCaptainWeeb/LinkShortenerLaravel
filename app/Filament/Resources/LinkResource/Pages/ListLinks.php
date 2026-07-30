@@ -15,14 +15,14 @@ class ListLinks extends ListRecords
     {
         return [
             Actions\CreateAction::make()
-                ->label('Создать ссылку')
+                ->label(__('links.actions.create'))
                 ->icon('heroicon-o-plus')
         ];
     }
 
     protected function getTableHeading(): string|Htmlable|null
     {
-        return "Мои ссылки";
+        return __('links.pages.list.heading');
     }
 
     public function getBreadcrumbs(): array

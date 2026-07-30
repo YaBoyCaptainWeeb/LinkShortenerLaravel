@@ -10,8 +10,8 @@ enum LinkGenerationError: string
     public function label(): string
     {
         return match ($this) {
-            self::TIMEOUT => 'Превышено время ожидания генерации ссылки.',
-            self::DATABASE_FULL => 'Свободные коды закончились. База данных переполнена.',
+            self::TIMEOUT => __('links.errors.generation_timeout'),
+            self::DATABASE_FULL => __('links.errors.database_full'),
         };
     }
 
