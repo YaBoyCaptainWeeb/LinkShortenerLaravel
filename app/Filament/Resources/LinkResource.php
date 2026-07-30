@@ -89,16 +89,24 @@ class LinkResource extends Resource
 
                 TextColumn::make('created_at')
                     ->label(__('links.table.created_at'))
-                    ->dateTime('d.m.Y')
+                    ->date(fn() => __('links.date_formats.date'))
                     ->sortable()
             ])
             ->filters([
                 Filter::make('created_at')
                     ->form([
                         DatePicker::make('created_from')
-                            ->label(__('links.filters.from')),
+                            ->label(__('links.filters.from'))
+                            ->native(false)
+                            ->displayFormat(fn() => __('links.date_formats.date'))
+                            ->locale(fn() => app()->getLocale())
+                            ->closeOnDateSelection(),
                         DatePicker::make('created_to')
-                            ->label(__('links.filters.until')),
+                            ->label(__('links.filters.until'))
+                            ->native(false)
+                            ->displayFormat(fn() => __('links.date_formats.date'))
+                            ->locale(fn() => app()->getLocale())
+                            ->closeOnDateSelection(),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query

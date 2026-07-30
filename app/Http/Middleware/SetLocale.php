@@ -21,10 +21,7 @@ class SetLocale
             ?? AppLocale::tryFrom((string)$request->session()->get("locale"))
             ?? AppLocale::tryFrom($request->getPreferredLanguage(AppLocale::values()));
 
-        if ($locale)
-        {
-            App::setLocale($locale->value);
-        }
+        App::setLocale($locale->value);
 
         return $next($request);
     }

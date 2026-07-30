@@ -29,6 +29,13 @@ class CreateLink extends CreateRecord
             ->label(__('links.actions.create_another'));
     }
 
+    protected function getCancelFormAction(): Action
+    {
+        return parent::getCancelFormAction()
+            ->alpineClickHandler(null)
+            ->url(static::getResource()::getUrl('index'));
+    }
+
     /**
      * @throws Halt
      */

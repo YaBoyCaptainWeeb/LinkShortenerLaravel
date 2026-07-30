@@ -24,6 +24,11 @@ return [
         'until' => 'Created until',
     ],
 
+    'date_formats' => [
+        'date' => 'M j, Y',
+        'date_time' => 'M j, Y H:i:s',
+    ],
+
     'actions' => [
         'create' => 'Create link',
         'create_another' => 'Create & create another',

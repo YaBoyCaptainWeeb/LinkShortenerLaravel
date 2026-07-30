@@ -25,7 +25,7 @@
                             {{ $click->user_agent }}
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                            {{ $click->clicked_at->format('d.m.Y H:i:s') }}
+                            {{ $click->clicked_at->translatedFormat(__('links.date_formats.date_time')) }}
                         </td>
                     </tr>
                 @endforeach

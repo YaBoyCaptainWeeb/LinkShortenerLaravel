@@ -24,6 +24,11 @@ return [
         'until' => 'Дата создания до',
     ],
 
+    'date_formats' => [
+        'date' => 'd.m.Y',
+        'date_time' => 'd.m.Y H:i:s',
+    ],
+
     'actions' => [
         'create' => 'Создать ссылку',
         'create_another' => 'Создать и создать еще',
