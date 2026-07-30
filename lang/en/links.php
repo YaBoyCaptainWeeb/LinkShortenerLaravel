@@ -12,6 +12,7 @@ return [
     ],
 
     'table' => [
+        'link' => 'Link',
         'short_url' => 'Short link',
         'original_url' => 'Original URL',
         'clicks_count' => 'Clicks',
@@ -32,7 +33,9 @@ return [
     'actions' => [
         'create' => 'Create link',
         'create_another' => 'Create & create another',
+        'copy' => 'Copy short link',
         'statistics' => 'View statistics',
+        'delete' => 'Delete link',
         'close' => 'Close',
     ],
 

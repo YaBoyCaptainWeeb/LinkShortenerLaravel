@@ -10,12 +10,14 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Actions\CreateAction;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Table;
 use Filament\Tables\Filters\Filter;
 use Illuminate\Database\Eloquent\Builder;
@@ -64,6 +66,15 @@ class LinkResource extends Resource
                 return $query->where('user_id', auth()->id());
             })
             ->columns([
+                ViewColumn::make('mobile_card')
+                    ->label(__('links.table.link'))
+                    ->view('filament.tables.columns.link-mobile')
+                    ->extraCellAttributes([
+                        'class' => 'w-full whitespace-normal',
+                        'style' => 'width: 100%; max-width: 0; white-space: normal;',
+                    ])
+                    ->hiddenFrom('md'),
+
                 TextColumn::make('code')
                     ->label(__('links.table.short_url'))
                     ->copyable()
@@ -72,25 +83,31 @@ class LinkResource extends Resource
                     ->copyableState(fn(Link $link) => $link->getShortUrlAttribute())
                     ->formatStateUsing(fn($state) => route('link.redirect', $state))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->visibleFrom('md'),
 
                 TextColumn::make('url')
                     ->label(__('links.table.original_url'))
                     ->limit(50)
                     ->tooltip(fn(Link $record) => $record->url)
-                    ->searchable(),
+                    ->searchable()
+                    ->visibleFrom('md'),
 
                 TextColumn::make('clicks_count')
                     ->label(__('links.table.clicks_count'))
+                    ->icon('heroicon-m-cursor-arrow-rays')
                     ->numeric()
                     ->sortable()
+                    ->alignCenter()
                     ->badge()
-                    ->color('success'),
+                    ->color('success')
+                    ->visibleFrom('md'),
 
                 TextColumn::make('created_at')
                     ->label(__('links.table.created_at'))
                     ->date(fn() => __('links.date_formats.date'))
                     ->sortable()
+                    ->visibleFrom('md'),
             ])
             ->filters([
                 Filter::make('created_at')
@@ -124,12 +141,16 @@ class LinkResource extends Resource
                 Action::make('statistics')
                     ->label(__('links.actions.statistics'))
                     ->icon('heroicon-o-chart-bar')
+                    ->iconButton()
+                    ->tooltip(__('links.actions.statistics'))
                     ->color('primary')
                     ->modalWidth('7xl')
                     ->modalContent(fn(Link $link) => view('filament.modals.link-statistics', ['link' => $link]))
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel(__('links.actions.close')),
                 DeleteAction::make()
+                    ->iconButton()
+                    ->tooltip(__('links.actions.delete'))
                     ->requiresConfirmation()
                     ->modalHeading(__('links.delete.heading'))
                     ->modalDescription(__('links.delete.description'))
