@@ -45,17 +45,19 @@ Main features:
 | Build target     | `production`                   | `development`                                   |
 | Database         | External MySQL/MariaDB         | `storage-dev/database.sqlite`                   |
 | Application code | Stored in the image            | Bind-mounted from the host                      |
+| Frontend assets  | Built into the image           | Built and watched by the `assets` service       |
 | Laravel caches   | Generated at startup           | Disabled                                        |
 | Main purpose     | Stable public deployment       | Development, staging, or a remote editable demo |
 
 Production is recommended for any public service. Its code and Composer dependencies are immutable until a new image is
 built.
 
-Development can also run on a remote HTTP or HTTPS server. PHP, Blade, route, and configuration changes from the host
-project directory are visible without rebuilding the image. Composer dependency changes and frontend changes under
-`resources/`
-still require an image rebuild. A public development deployment is less safe: the source is mutable, SQLite has limited
-write concurrency, and `APP_DEBUG=true` may expose sensitive details. Use it only when those trade-offs are intentional.
+Development can also run on a remote HTTP or HTTPS server. PHP, Blade, route, configuration, CSS, JavaScript, and
+Tailwind class changes from the host project directory are visible without rebuilding the PHP image. The dedicated
+`assets` service performs an initial Vite build and then watches frontend sources. Composer dependency or PHP extension
+changes still require rebuilding `shortlinks:dev`. A public development deployment is less safe: the source is mutable,
+SQLite has limited write concurrency, and `APP_DEBUG=true` may expose sensitive details. Use it only when those
+trade-offs are intentional.
 
 Both variants can run simultaneously when they use separate project directories, domains, ports, and `.env` files.
 Compose project names, networks, public volumes, storage directories, databases, and session cookies are already
@@ -350,6 +352,16 @@ DEV_SSL_CERTIFICATE_KEY=/absolute/host/path/privkey.pem
 The Compose file overrides database, cache, queue, and session storage to use the isolated SQLite database. It also
 forces a separate `shortlinks_dev_session` cookie.
 
+The development stack contains three long-running services:
+
+- `app` runs PHP-FPM and reads PHP, Blade, routes, and configuration through the project bind mount;
+- `assets` uses `node:20-alpine`, performs the initial Vite build, and then runs `npm run build -- --watch`;
+- `nginx` reads the generated files from the shared `shortlinks_dev_public` volume.
+
+Startup is ordered by healthchecks: `assets` waits for a healthy `app`, and Nginx waits until the first frontend build
+has completed successfully. Frontend dependencies are stored in the persistent `shortlinks_dev_modules` volume. On
+startup, the assets entrypoint runs `npm ci` only when Vite is missing or the `package-lock.json` hash has changed.
+
 ### Option A: build locally and transfer the images
 
 Build locally for an x86-64 VPS:
@@ -357,7 +369,8 @@ Build locally for an x86-64 VPS:
 ```bash
 docker build --platform linux/amd64 --target development -t shortlinks:dev -f docker/Dockerfile .
 docker pull --platform linux/amd64 nginx:1.28-alpine
-docker save shortlinks:dev nginx:1.28-alpine | gzip > shortlinks-development-amd64.tar.gz
+docker pull --platform linux/amd64 node:20-alpine
+docker save shortlinks:dev nginx:1.28-alpine node:20-alpine | gzip > shortlinks-development-amd64.tar.gz
 scp shortlinks-development-amd64.tar.gz root@VPS_IP:/tmp/
 ```
 
@@ -368,7 +381,7 @@ cd /var/www/LinkShortenerLaravel_dev
 mkdir -p storage-dev
 docker load < /tmp/shortlinks-development-amd64.tar.gz
 docker compose --env-file .env -f docker/docker-compose.dev.yml config
-docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --wait --wait-timeout 120
+docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --wait --wait-timeout 300
 ```
 
 ### Option B: build directly on the target machine
@@ -380,8 +393,9 @@ cd /var/www/LinkShortenerLaravel_dev
 mkdir -p storage-dev
 docker build --target development -t shortlinks:dev -f docker/Dockerfile .
 docker pull nginx:1.28-alpine
+docker pull node:20-alpine
 docker compose --env-file .env -f docker/docker-compose.dev.yml config
-docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --wait --wait-timeout 120
+docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --wait --wait-timeout 300
 ```
 
 ### Option C: run development over plain HTTP
@@ -411,7 +425,7 @@ to the container. After completing build option A or B, run:
 
 ```bash
 docker compose --env-file .env -f docker/docker-compose.dev.yml config
-docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --wait --wait-timeout 120
+docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --wait --wait-timeout 300
 curl http://127.0.0.1:8080/healthz
 ```
 
@@ -421,23 +435,37 @@ To put development behind an HTTPS reverse proxy on the same host, bind the port
 
 For ordinary PHP, Blade, route, or configuration changes on the VPS, update the files or run `git pull --ff-only`; the
 bind mount exposes them to the running application. A restart is normally unnecessary because development enables
-OPcache timestamp validation.
+OPcache timestamp validation. The assets watcher automatically rebuilds CSS and JavaScript after changes to frontend
+sources or Tailwind classes in Blade templates and writes the result to the shared public volume.
 
-Rebuild the development image when any of these change:
-
-- `composer.json` or `composer.lock`;
-- `package.json` or `package-lock.json`;
-- frontend assets under `resources/`;
-- `docker/Dockerfile` or files copied into the image.
-
-After loading a rebuilt development image:
+When `package.json` and `package-lock.json` change, recreate the assets service. Its entrypoint detects the new lock-file
+hash, runs `npm ci` in the named modules volume, performs a complete initial build, and resumes watch mode:
 
 ```bash
-docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --force-recreate --renew-anon-volumes --wait --wait-timeout 120
+docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --force-recreate assets --wait --wait-timeout 300
 ```
 
-`--renew-anon-volumes` refreshes the image-provided Composer `vendor` directory. Restarting dev also refreshes its
-public named volume from the image.
+Rebuild the development PHP image only when Composer dependencies, PHP extensions, system packages, or the relevant
+Dockerfile stages change. Because `vendor` is an anonymous volume, renew anonymous volumes when deploying that rebuilt
+image:
+
+After building or loading a rebuilt development image:
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --force-recreate --renew-anon-volumes --wait --wait-timeout 300
+```
+
+`--renew-anon-volumes` refreshes the image-provided Composer `vendor` directory. Restarting `app` does not wipe the
+public volume: it initializes that volume from the image only when `public/index.php` is missing. After initialization,
+the `assets` service owns `public/build`, removes only that directory before its initial build, and preserves the rest
+of `public`.
+
+Changes to `docker/frontend-entrypoint.sh` require recreating `assets`; changes to `docker/entrypoint.sh` require
+recreating `app`. After changing `docker/docker-compose.dev.yml`, run `docker compose up -d` with the same file and
+environment options so Compose can apply the changed service configuration.
+
+Named volumes survive `docker compose down`. Do not use `docker compose down -v` during an ordinary restart: `-v`
+deletes both `shortlinks_dev_public` and the cached `shortlinks_dev_modules` dependencies.
 
 ## Operations and diagnostics
 
@@ -458,6 +486,8 @@ unavailable but the container is already running, direct execution is possible:
 
 ```bash
 docker exec -it shortlinks_app_dev sh
+docker logs --tail 100 shortlinks_assets_dev
+docker stats shortlinks_app_dev shortlinks_assets_dev shortlinks_nginx_dev
 ```
 
 Docker healthchecks report `starting`, `healthy`, or `unhealthy` in `docker compose ps`. They control startup ordering
@@ -503,15 +533,17 @@ LinkShortener — самостоятельно разворачиваемый с
 | Build target   | `production`                   | `development`                           |
 | База данных    | Внешний MySQL/MariaDB          | `storage-dev/database.sqlite`           |
 | Код приложения | Находится внутри образа        | Подключён с Docker-host                 |
+| Frontend       | Собирается внутри образа       | Собирается и отслеживается `assets`     |
 | Кэши Laravel   | Создаются при запуске          | Отключены                               |
 | Назначение     | Стабильный публичный сервис    | Разработка, staging или изменяемое демо |
 
 Для публичного сервиса рекомендуется production: код и Composer-зависимости не меняются до сборки нового образа.
 
-Development также можно запускать на удалённом сервере по HTTP или HTTPS. Изменения PHP, Blade, маршрутов и конфигурации
-на Docker-host видны без пересборки образа. Изменения Composer-зависимостей и frontend-файлов в `resources/` требуют
-пересборки. Публичный development менее безопасен: код изменяемый, SQLite хуже переносит параллельную запись, а
-`APP_DEBUG=true` может раскрыть чувствительную информацию. Используйте такой режим осознанно.
+Development также можно запускать на удалённом сервере по HTTP или HTTPS. Изменения PHP, Blade, маршрутов, конфигурации,
+CSS, JavaScript и Tailwind-классов на Docker-host видны без пересборки PHP-образа. Отдельный сервис `assets` выполняет
+первую Vite-сборку, а затем следит за frontend-файлами. Изменения Composer-зависимостей и PHP-расширений по-прежнему
+требуют пересборки `shortlinks:dev`. Публичный development менее безопасен: код изменяемый, SQLite хуже переносит
+параллельную запись, а `APP_DEBUG=true` может раскрыть чувствительную информацию. Используйте такой режим осознанно.
 
 Оба варианта могут работать одновременно, если находятся в разных каталогах и используют разные домены, порты и `.env`.
 Имена Compose-проектов, сети, public volumes, storage, базы и session cookie уже разделены.
@@ -800,6 +832,17 @@ DEV_SSL_CERTIFICATE_KEY=/абсолютный/путь/на/хосте/privkey.p
 Compose переопределяет настройки базы, кэша, очереди и сессий для работы с отдельной SQLite. Также принудительно
 используется отдельная cookie `shortlinks_dev_session`.
 
+Development-контур состоит из трёх постоянно работающих сервисов:
+
+- `app` запускает PHP-FPM и читает PHP, Blade, маршруты и конфигурацию через bind mount проекта;
+- `assets` использует `node:20-alpine`, выполняет первоначальную Vite-сборку, а затем запускает
+  `npm run build -- --watch`;
+- `nginx` читает сгенерированные файлы из общего volume `shortlinks_dev_public`.
+
+Порядок запуска контролируют healthcheck: `assets` ждёт healthy-состояния `app`, а Nginx ждёт успешного завершения
+первой frontend-сборки. Зависимости frontend хранятся в постоянном volume `shortlinks_dev_modules`. При запуске
+entrypoint сервиса `assets` выполняет `npm ci`, только если Vite отсутствует или изменился хэш `package-lock.json`.
+
 ### Вариант А: локальная сборка и перенос образов
 
 Локальная сборка для x86-64 VPS:
@@ -807,7 +850,8 @@ Compose переопределяет настройки базы, кэша, оч
 ```bash
 docker build --platform linux/amd64 --target development -t shortlinks:dev -f docker/Dockerfile .
 docker pull --platform linux/amd64 nginx:1.28-alpine
-docker save shortlinks:dev nginx:1.28-alpine | gzip > shortlinks-development-amd64.tar.gz
+docker pull --platform linux/amd64 node:20-alpine
+docker save shortlinks:dev nginx:1.28-alpine node:20-alpine | gzip > shortlinks-development-amd64.tar.gz
 scp shortlinks-development-amd64.tar.gz root@IP_VPS:/tmp/
 ```
 
@@ -818,7 +862,7 @@ cd /var/www/LinkShortenerLaravel_dev
 mkdir -p storage-dev
 docker load < /tmp/shortlinks-development-amd64.tar.gz
 docker compose --env-file .env -f docker/docker-compose.dev.yml config
-docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --wait --wait-timeout 120
+docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --wait --wait-timeout 300
 ```
 
 ### Вариант Б: сборка прямо на целевой машине
@@ -830,8 +874,9 @@ cd /var/www/LinkShortenerLaravel_dev
 mkdir -p storage-dev
 docker build --target development -t shortlinks:dev -f docker/Dockerfile .
 docker pull nginx:1.28-alpine
+docker pull node:20-alpine
 docker compose --env-file .env -f docker/docker-compose.dev.yml config
-docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --wait --wait-timeout 120
+docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --wait --wait-timeout 300
 ```
 
 ### Вариант В: запуск development по HTTP
@@ -861,7 +906,7 @@ ports:
 
 ```bash
 docker compose --env-file .env -f docker/docker-compose.dev.yml config
-docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --wait --wait-timeout 120
+docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --wait --wait-timeout 300
 curl http://127.0.0.1:8080/healthz
 ```
 
@@ -871,23 +916,38 @@ curl http://127.0.0.1:8080/healthz
 
 Для обычных изменений PHP, Blade, маршрутов и конфигурации на VPS достаточно изменить файлы или выполнить
 `git pull --ff-only`: bind mount передаёт их работающему приложению. Перезапуск обычно не нужен, потому что в
-development включена проверка времени изменения файлов OPcache.
+development включена проверка времени изменения файлов OPcache. При изменении frontend-исходников или Tailwind-классов
+в Blade-шаблонах сервис `assets` автоматически пересобирает CSS и JavaScript и записывает результат в общий public
+volume.
 
-Пересобирайте development-образ при изменении:
-
-- `composer.json` или `composer.lock`;
-- `package.json` или `package-lock.json`;
-- frontend-файлов в `resources/`;
-- `docker/Dockerfile` или файлов, копируемых в образ.
-
-После загрузки пересобранного development-образа:
+При изменении `package.json` и `package-lock.json` пересоздайте сервис `assets`. Его entrypoint обнаружит новый хэш
+lock-файла, выполнит `npm ci` в именованном modules volume, сделает полную первоначальную сборку и продолжит работу в
+watch-режиме:
 
 ```bash
-docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --force-recreate --renew-anon-volumes --wait --wait-timeout 120
+docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --force-recreate assets --wait --wait-timeout 300
 ```
 
-`--renew-anon-volumes` обновляет поставляемый образом каталог Composer `vendor`. При перезапуске dev также обновляет
-свой именованный public volume из образа.
+Пересобирайте development PHP-образ только при изменении Composer-зависимостей, PHP-расширений, системных пакетов или
+соответствующих этапов Dockerfile. Поскольку `vendor` подключён как anonymous volume, при развёртывании пересобранного
+образа обновите anonymous volumes:
+
+После сборки или загрузки пересобранного development-образа:
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.dev.yml up -d --no-build --force-recreate --renew-anon-volumes --wait --wait-timeout 300
+```
+
+`--renew-anon-volumes` обновляет поставляемый образом каталог Composer `vendor`. Перезапуск `app` не очищает public
+volume: он инициализируется из образа, только если отсутствует `public/index.php`. После инициализации сервис `assets`
+управляет `public/build`, удаляет только этот каталог перед первой сборкой и сохраняет остальной `public`.
+
+После изменения `docker/frontend-entrypoint.sh` пересоздайте `assets`, после изменения `docker/entrypoint.sh` — `app`.
+После изменения `docker/docker-compose.dev.yml` выполните `docker compose up -d` с теми же параметрами файла окружения и
+Compose-файла, чтобы Compose применил новую конфигурацию сервисов.
+
+Именованные volumes сохраняются после `docker compose down`. Не используйте `docker compose down -v` при обычном
+перезапуске: параметр `-v` удалит и `shortlinks_dev_public`, и кэш зависимостей `shortlinks_dev_modules`.
 
 ## Эксплуатация и диагностика
 
@@ -908,6 +968,8 @@ curl -k https://127.0.0.1:443/healthz
 
 ```bash
 docker exec -it shortlinks_app_dev sh
+docker logs --tail 100 shortlinks_assets_dev
+docker stats shortlinks_app_dev shortlinks_assets_dev shortlinks_nginx_dev
 ```
 
 Healthcheck отображает состояния `starting`, `healthy` и `unhealthy` в `docker compose ps`. Проверки управляют порядком
