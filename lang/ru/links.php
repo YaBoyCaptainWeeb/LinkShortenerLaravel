@@ -25,6 +25,15 @@ return [
         'until' => 'Дата создания до',
     ],
 
+    'sorting' => [
+        'label' => 'Сортировка',
+        'column' => 'Столбец',
+        'direction' => 'Направление',
+        'default' => 'По умолчанию',
+        'ascending' => 'По возрастанию',
+        'descending' => 'По убыванию',
+    ],
+
     'date_formats' => [
         'date' => 'd.m.Y',
         'date_time' => 'd.m.Y H:i:s',

@@ -7,6 +7,9 @@ services:
             dockerfile: docker/Dockerfile
             target: development
         container_name: shortlinks_app_dev
+        entrypoint:
+            - /bin/sh
+            - /var/www/html/docker/entrypoint.sh
         restart: unless-stopped
         environment:
             APP_ENV: local
@@ -40,6 +43,37 @@ services:
         networks:
             - shortlinks_network_dev
 
+    assets:
+        image: node:20-alpine
+        container_name: shortlinks_assets_dev
+        restart: unless-stopped
+        working_dir: /var/www/html
+        entrypoint:
+            - /bin/sh
+            - /var/www/html/docker/frontend-entrypoint.sh
+        volumes:
+            - ..:/var/www/html
+            - app_public:/var/www/html/public
+            - node_modules:/var/www/html/node_modules
+        depends_on:
+            app:
+                condition: service_healthy
+        healthcheck:
+            test: >-
+                test -f /tmp/frontend-ready
+                && test -f public/build/manifest.json
+            interval: 5s
+            timeout: 3s
+            retries: 12
+            start_period: 60s
+        logging:
+            driver: json-file
+            options:
+                max-size: "10m"
+                max-file: "3"
+        networks:
+            - shortlinks_network_dev
+
     nginx:
         image: nginx:1.28-alpine
         container_name: shortlinks_nginx_dev
@@ -63,7 +97,7 @@ services:
               target: /etc/nginx/ssl/privkey.pem
               read_only: true
         depends_on:
-            app:
+            assets:
                 condition: service_healthy
         mem_limit: 128m
         logging:
@@ -77,6 +111,9 @@ services:
 volumes:
     app_public:
         name: shortlinks_dev_public
+        driver: local
+    node_modules:
+        name: shortlinks_dev_modules
         driver: local
 networks:
     shortlinks_network_dev:

@@ -14,9 +14,12 @@ mkdir -p \
     bootstrap/cache
 
 if [ "${APP_ENV:-production}" != "production" ] && [ -d /opt/public ]; then
-    echo "[entrypoint] Refreshing dev public volume from the image..."
-    find public -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-    cp -a /opt/public/. public/
+    if [ ! -f public/index.php ]; then
+        echo "[entrypoint] Initializing dev public volume from the image..."
+        cp -a /opt/public/. public/
+    else
+        echo "[entrypoint] Dev public volume is already initialized; preserving it."
+    fi
 
     sed -ri 's/^opcache.validate_timestamps=.*/opcache.validate_timestamps=1/' \
         /usr/local/etc/php/conf.d/zz-shortlinks.ini

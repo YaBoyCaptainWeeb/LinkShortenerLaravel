@@ -4,47 +4,56 @@
 
 @once
     <style>
-        /* noinspection CssUnusedSymbol */
-        .link-statistics-modal-window > .fi-modal-content {
-            min-height: 0;
-            flex: 1 1 auto;
-            overflow: hidden;
-        }
+        @media (min-width: 768px) {
+            /* noinspection CssUnusedSymbol */
+            .link-statistics-modal-window {
+                height: min(48rem, calc(100dvh - 2rem));
+                max-height: calc(100dvh - 2rem);
+                overflow: hidden;
+            }
 
-        /* noinspection CssUnusedSymbol */
-        .link-statistics-modal-window .link-clicks-table,
-        .link-statistics-modal-window .link-clicks-table > .fi-ta,
-        .link-statistics-modal-window .link-clicks-table .fi-ta-ctn {
-            min-height: 0;
-            flex: 1 1 auto;
-            display: flex;
-            flex-direction: column;
-        }
+            /* noinspection CssUnusedSymbol */
+            .link-statistics-modal-window > .fi-modal-content {
+                min-height: 0;
+                flex: 1 1 auto;
+                overflow: hidden;
+            }
 
-        /* noinspection CssUnusedSymbol */
-        .link-statistics-modal-window .link-clicks-table .fi-ta-content {
-            min-height: 0;
-            flex: 1 1 auto;
-            overflow: auto;
-            overscroll-behavior: contain;
-            -webkit-overflow-scrolling: touch;
-        }
+            /* noinspection CssUnusedSymbol */
+            .link-statistics-modal-window .link-statistics-modal,
+            .link-statistics-modal-window .link-clicks-table,
+            .link-statistics-modal-window .link-clicks-table > .fi-ta,
+            .link-statistics-modal-window .link-clicks-table .fi-ta-ctn {
+                min-height: 0;
+                flex: 1 1 auto;
+                display: flex;
+                flex-direction: column;
+            }
 
-        .link-statistics-modal-window .link-clicks-table .fi-ta-table > thead {
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
+            /* noinspection CssUnusedSymbol */
+            .link-statistics-modal-window .link-clicks-table .fi-ta-content {
+                min-height: 0;
+                flex: 1 1 auto;
+                overflow: auto;
+                overscroll-behavior: contain;
+            }
 
-        /* noinspection CssUnusedSymbol */
-        .link-statistics-modal-window .link-clicks-table .fi-ta-pagination {
-            flex: 0 0 auto;
+            .link-statistics-modal-window .link-clicks-table .fi-ta-table > thead {
+                position: sticky;
+                top: 0;
+                z-index: 1;
+            }
+
+            /* noinspection CssUnusedSymbol */
+            .link-statistics-modal-window .link-clicks-table .fi-ta-pagination {
+                flex: 0 0 auto;
+            }
         }
     </style>
 @endonce
 
 <div
-    class="link-statistics-modal flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-hidden"
+    class="link-statistics-modal w-full min-w-0 max-w-full space-y-4"
     style="width: 100%; min-width: 0; max-width: 100%;"
 >
     <div class="shrink-0 space-y-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-800 md:hidden">

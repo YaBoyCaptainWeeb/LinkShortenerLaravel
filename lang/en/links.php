@@ -25,6 +25,15 @@ return [
         'until' => 'Created until',
     ],
 
+    'sorting' => [
+        'label' => 'Sorting',
+        'column' => 'Column',
+        'direction' => 'Direction',
+        'default' => 'Default order',
+        'ascending' => 'Ascending',
+        'descending' => 'Descending',
+    ],
+
     'date_formats' => [
         'date' => 'M j, Y',
         'date_time' => 'M j, Y H:i:s',

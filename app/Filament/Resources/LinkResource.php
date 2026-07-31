@@ -107,6 +107,7 @@ class LinkResource extends Resource
                     ->sortable()
                     ->visibleFrom('md'),
             ])
+            ->header(view('filament.tables.link-mobile-sort'))
             ->filters([
                 Filter::make('created_at')
                     ->form([
@@ -145,10 +146,7 @@ class LinkResource extends Resource
                     ->modalWidth('7xl')
                     ->extraModalWindowAttributes([
                         'class' => 'link-statistics-modal-window min-w-0',
-                        'style' => 'width: min(80rem, calc(100vw - 2rem)); max-width: calc(100vw - 2rem); height: min(48rem, calc(100dvh - 2rem)); max-height: calc(100dvh - 2rem); overflow: hidden;',
                     ])
-                    ->stickyModalHeader()
-                    ->stickyModalFooter()
                     ->modalContent(fn(Link $link) => view('filament.modals.link-statistics', ['link' => $link]))
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel(__('links.actions.close')),

@@ -41,11 +41,13 @@ class LinkClicksTable extends Component implements HasForms, HasTable
                     ->label(__('links.statistics.ip_address'))
                     ->fontFamily('mono')
                     ->wrap()
+                    ->sortable()
                     ->visibleFrom('md'),
 
                 TextColumn::make('user_agent')
                     ->label(__('links.statistics.user_agent'))
                     ->wrap()
+                    ->sortable()
                     ->visibleFrom('md'),
 
                 TextColumn::make('clicked_at')
@@ -55,8 +57,10 @@ class LinkClicksTable extends Component implements HasForms, HasTable
                             ->locale(app()->getLocale())
                             ->translatedFormat(__('links.date_formats.date_time')),
                     )
+                    ->sortable()
                     ->visibleFrom('md'),
             ])
+            ->header(view('filament.tables.link-click-mobile-sort'))
             ->paginated(TablePagination::OPTIONS)
             ->defaultPaginationPageOption(TablePagination::DEFAULT)
             ->emptyStateHeading(__('links.statistics.no_clicks'))

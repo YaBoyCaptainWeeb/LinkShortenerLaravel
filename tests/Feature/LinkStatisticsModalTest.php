@@ -63,5 +63,36 @@ class LinkStatisticsModalTest extends TestCase
         $this->assertSame('md', $table->getColumn('ip_address')->getVisibleFrom());
         $this->assertSame('md', $table->getColumn('user_agent')->getVisibleFrom());
         $this->assertSame('md', $table->getColumn('clicked_at')->getVisibleFrom());
+        $this->assertTrue($table->getColumn('ip_address')->isSortable());
+        $this->assertTrue($table->getColumn('user_agent')->isSortable());
+        $this->assertTrue($table->getColumn('clicked_at')->isSortable());
+    }
+
+    public function test_mobile_click_table_can_sort_clicks_by_date(): void
+    {
+        $user = User::factory()->create();
+        $link = Link::factory()->for($user)->create();
+
+        $olderClick = LinkClick::factory()->for($link)->create([
+            'clicked_at' => now()->subMinute(),
+        ]);
+        $newerClick = LinkClick::factory()->for($link)->create([
+            'clicked_at' => now(),
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(LinkClicksTable::class, ['link' => $link])
+            ->assertSee(__('links.sorting.label'))
+            ->assertSeeHtml('<option value="clicked_at">')
+            ->call('sortTable', 'clicked_at', 'asc')
+            ->assertCanSeeTableRecords(
+                [$olderClick, $newerClick],
+                inOrder: true,
+            )
+            ->call('sortTable', 'clicked_at', 'desc')
+            ->assertCanSeeTableRecords(
+                [$newerClick, $olderClick],
+                inOrder: true,
+            );
     }
 }
