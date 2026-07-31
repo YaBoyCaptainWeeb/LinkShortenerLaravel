@@ -3,14 +3,13 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\LinkResource\Pages;
-use App\Filament\Resources\LinkResource\RelationManagers;
 use App\Models\Link;
+use App\Support\TablePagination;
 use Exception;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
-use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Actions\CreateAction;
@@ -98,7 +97,6 @@ class LinkResource extends Resource
                     ->icon('heroicon-m-cursor-arrow-rays')
                     ->numeric()
                     ->sortable()
-                    ->alignCenter()
                     ->badge()
                     ->color('success')
                     ->visibleFrom('md'),
@@ -145,6 +143,12 @@ class LinkResource extends Resource
                     ->tooltip(__('links.actions.statistics'))
                     ->color('primary')
                     ->modalWidth('7xl')
+                    ->extraModalWindowAttributes([
+                        'class' => 'link-statistics-modal-window min-w-0',
+                        'style' => 'width: min(80rem, calc(100vw - 2rem)); max-width: calc(100vw - 2rem); height: min(48rem, calc(100dvh - 2rem)); max-height: calc(100dvh - 2rem); overflow: hidden;',
+                    ])
+                    ->stickyModalHeader()
+                    ->stickyModalFooter()
                     ->modalContent(fn(Link $link) => view('filament.modals.link-statistics', ['link' => $link]))
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel(__('links.actions.close')),
@@ -172,9 +176,8 @@ class LinkResource extends Resource
                         ->label(__('links.actions.create'))
                 ]
             )
-            ->paginationPageOptions([
-                10, 25, 50, 100
-            ]);
+            ->defaultPaginationPageOption(TablePagination::DEFAULT)
+            ->paginationPageOptions(TablePagination::OPTIONS);
     }
 
     public static function getRelations(): array

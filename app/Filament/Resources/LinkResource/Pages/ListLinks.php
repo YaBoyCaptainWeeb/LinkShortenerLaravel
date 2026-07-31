@@ -11,6 +11,8 @@ class ListLinks extends ListRecords
 {
     protected static string $resource = LinkResource::class;
 
+    protected ?string $maxContentWidth = 'full';
+
     protected function getHeaderActions(): array
     {
         return [

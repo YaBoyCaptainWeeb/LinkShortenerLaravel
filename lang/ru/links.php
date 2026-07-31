@@ -30,6 +30,10 @@ return [
         'date_time' => 'd.m.Y H:i:s',
     ],
 
+    'pagination' => [
+        'page' => 'Страница :current из :last',
+    ],
+
     'actions' => [
         'create' => 'Создать ссылку',
         'create_another' => 'Создать и создать еще',

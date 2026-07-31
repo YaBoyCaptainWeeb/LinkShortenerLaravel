@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Unit;
+namespace Tests\Feature;
 
 use App\Models\Link;
 use App\Models\User;
@@ -12,22 +12,20 @@ use Tests\TestCase;
 class LinkShortenerServiceTest extends TestCase
 {
     use RefreshDatabase;
+
     /**
-     * Тест 1: Проверяем успешное создание короткой ссылки в обычном режиме.
-     *
      * @throws RandomException
      */
     public function test_create_a_short_link_successfully(): void
     {
         $user = User::factory()->create();
-        $url = 'https://google.com';
+        $url = 'http://127.0.0.1:1/example';
         $service = new LinkShortenerService();
 
         $link = $service->createShortLink($user, $url);
 
-        $this->assertEquals($url, $link->url);
-
-        $this->assertEquals(6, strlen($link->code));
+        $this->assertSame($url, $link->url);
+        $this->assertSame(6, strlen($link->code));
 
         $this->assertDatabaseHas('links', [
             'id' => $link->id,
@@ -36,5 +34,4 @@ class LinkShortenerServiceTest extends TestCase
             'user_id' => $user->id,
         ]);
     }
-
 }

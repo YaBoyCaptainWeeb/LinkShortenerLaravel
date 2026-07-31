@@ -30,6 +30,10 @@ return [
         'date_time' => 'M j, Y H:i:s',
     ],
 
+    'pagination' => [
+        'page' => 'Page :current of :last',
+    ],
+
     'actions' => [
         'create' => 'Create link',
         'create_another' => 'Create & create another',

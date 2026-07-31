@@ -1,11 +1,17 @@
 <?php
 
 namespace App\Models;
+
+use Database\Factories\LinkClickFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class LinkClick extends Model
 {
+    /** @use HasFactory<LinkClickFactory> */
+    use HasFactory;
+
     public const string|null UPDATED_AT = null;
     public const string CREATED_AT = 'clicked_at';
 

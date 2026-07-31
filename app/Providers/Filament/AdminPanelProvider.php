@@ -38,7 +38,6 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(PanelsRenderHook::USER_MENU_BEFORE,
             fn () => view('components.locale-switcher'))
-//            ->topNavigation()
             ->navigation(false)
             ->maxContentWidth(MaxWidth::FitContent)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
