@@ -23,7 +23,7 @@ Main features:
 - random Base62 short codes;
 - click counters with IP address, user agent, and timestamp history;
 - Open Graph metadata collection and previews for social media crawlers;
-- English and Russian interface translations (WIP);
+- English and Russian interface translations;
 - HTTP or HTTPS deployment with Nginx and Docker Compose.
 
 ### Stack
@@ -511,7 +511,7 @@ LinkShortener — самостоятельно разворачиваемый с
 - случайные короткие Base62-коды;
 - счётчик переходов с историей IP-адресов, User-Agent и времени;
 - получение Open Graph-метаданных целевой страницы;
-- английская и русская локализация (WIP);
+- английская и русская локализация;
 - HTTP- или HTTPS-развёртывание через Nginx и Docker Compose.
 
 ### Стек
